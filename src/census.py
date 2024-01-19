@@ -32,5 +32,5 @@ def calc_moe(array,how='sum'):
 
           result = y_reciprocal * np.sqrt(term_2)
     else:
-         raise Exception("You fool! How must be either 'sum', 'mean', or 'proportion'.")
+         raise Exception("'How' argument must be either 'sum', 'mean', or 'proportion'.")
     return result
