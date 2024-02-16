@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "geopandas"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,9 +10,15 @@ authors = [
   { name="Sam Martinez", email="smartinez2@clevelandohio.gov"},
   { name="Dro Sohrabian", email="dsohrabian@clevelandohio.gov"}
 ]
-description="A project developed by the City of Cleveland Urban AI department, meant to simplify data processing pathes for the public"
+description="A project developed by the City of Cleveland Office of Urban Analytics and Innovation, built to simplify civic data processing for the public."
 readme = "README.md"
 requires-python = ">=3.7"
+dependencies = [
+  "geopandas",
+  "pandas",
+  "requests",
+  "ipykernel"
+]
 
 [project.urls]
 Homepage="https://github.com/City-of-Cleveland/cledatatoolkit/"

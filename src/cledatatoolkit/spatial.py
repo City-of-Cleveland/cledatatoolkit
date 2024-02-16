@@ -2,7 +2,7 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-from census import calc_moe
+from .census import calc_moe
 
 # Largest overlap function 1:1 take the biggest overlapping feature
 def largest_overlap(
@@ -69,6 +69,45 @@ def largest_overlap(
             real_join_field=transfer_field,
         )
     return new_gdf
+
+def fix_missing_sjoins(
+    target_gdf: gpd.GeoDataFrame,
+    join_gdf: gpd.GeoDataFrame,
+    reference_field: str = "par_city",  # Field that indicates Cleveland status
+    reference_value: str = "CLEVELAND",  # Format to match value if attributed to Cleveland
+    test_join_field: str = None,  # Field we are validating
+    real_join_field: str = None,  # The source field name to grab
+):
+    """Fix spatial joins that should not be null by running sjoin_nearest
+    on records that should logically not be empty. Typical use case is making sure all shapes within Cleveland
+    are successfully joining to geographies that are required for Cleveland property, like ward or neighborhood
+
+    Args:
+        gdf: GeoDataFrame = Left geodataframe (usually parcels)
+        join_gdf: GeoDataFrame = Right geodataframe (usually reference geography)
+        reference_field: str =  Defaults to "par_city" assuming parcels
+        reference_value: str = "CLEVELAND", # Format to match value if attributed to Cleveland
+        test_join_field: str = "Neighborhood", Field we are validating
+        real_join_field:str="SPANM"#Thesourcefieldnametograb.
+
+    Raises:
+        ValueError: If a test field isn't indicated
+
+    Returns:
+        GeoDataFrame
+    """
+    if not test_join_field:
+        raise ValueError(
+            "You must enter the field you want to test for null, i.e. not being found in something that should be in Cleveland."
+        )
+    # Rows that should be in Cleveland but are testing for bad value
+    require_fixes = (target_gdf[reference_field] == reference_value) & (
+        target_gdf[test_join_field].isna()
+    )
+    # Use nearest spatial join to grab these edge cases
+    fix_array = gpd.sjoin_nearest(target_gdf[require_fixes], join_gdf)[real_join_field]
+    target_gdf.loc[require_fixes, test_join_field] = fix_array
+    return target_gdf
 
 
 def build_aggregator(df,exclude=None,default='sum'):
