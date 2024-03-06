@@ -38,7 +38,7 @@ class FLCWrapper:
 
     def __init__(self, container_id, gis):
         """FLCWrapper stands for FeatureLayerCollection Wrapper. 
-        This is a class that contains various "quality of life" functions for working with the ArcGIS Online API, specifically FeatureLayerCollections.
+        This is a class that contains various "quality of life" functions for working with the ArcGIS Online API, specifically FeatureLayerCollections. 
         FeatureLayerCollections are FeatureServices that contain one or more FeatureLayers.
 
         Args:
@@ -141,7 +141,7 @@ class FLCWrapper:
 
     def paste(self, schema_id, layer_index):
         """This function will copy a Service Definition from a pre-existing ArcGIS Online FeatureLayer and append it to the FeatureLayerCollection as a new FeatureLayer without any Features. 
-        This function will only work for FeatureLayers, Tables are not currently supported.
+        This function will only work for spatial Layers, Tables are not currently supported.
 
         Args:
             schema_id (str): The ArcGIS Online ID of the FeatureLayerCollection reference that contains the FeatureLayer you want to paste.
@@ -168,16 +168,16 @@ class FLCWrapper:
     
 
     def add(self, schema:dict, type:str="layer"):
-        """Add a new FeatureLayer or Table to the FeatureLayerCollection.
+        """Add a new FeatureLayer to the FeatureLayerCollection.
         Args:
-            schema (dict): A dictionary of Service Definition properties that define the FeatureLayer or Table.
-            type (str): Either "layer" or "table". This determines the type of the Service Definition. Defaults to "layer".
+            schema (dict): A dictionary of Service Definition properties that define the Layer or Table.
+            type (str): Either "layer" or "table". This determines the type of the FeatureLayer. Defaults to "layer".
 
         Raises:
             Exception: If the type parameter is neither "layer" nor "table".
 
         Returns:
-            FeatureLayerCollection: An ArcGIS Online reference to the newly created FeatureLayer if `type` is set to "layer".
+            FeatureLayerCollection: An ArcGIS Online reference to the newly created Layer if `type` is set to "layer".
             Table: An ArcGIS Online reference to the newly created Table if `type` is set to "table".
         """
         #If the type is table
@@ -199,11 +199,11 @@ class FLCWrapper:
         
 
     def delete(self, id:int, type:str="layer"):
-        """Delete a FeatureLayer or Table from the FeatureLayerCollection.
+        """Delete a FeatureLayer from the FeatureLayerCollection.
 
         Args:
             id (int): ID of the FeatureLayer or Table to delete (i.e 0, 1, 2, etc.).
-            type (str): Either "layer" or "table". This determines the type of Service Definition component that is being deleted. Defaults to "layer".
+            type (str): Either "layer" or "table". This determines the type of the FeatureLayer that is being deleted. Defaults to "layer".
 
         Raises:
             Exception: If the type parameter is neither "layer" nor "table".
@@ -232,14 +232,15 @@ class FLCWrapper:
 class FLWrapper(FLCWrapper):
 
     def __init__(self, layer_id, container_id, gis, how='layer'):
-        """FLCWrapper stands for FeatureLayer Wrapper. 
+        """FLWrapper stands for FeatureLayer Wrapper. 
         This is a class that contains various "quality of life" functions for working with the ArcGIS Online API, specifically FeatureLayers.
         FeatureLayers are individual layers contained within a FeatureLayerCollections.
+        FeatureLayers can either be spatial 'layers' or nonspatial 'tables'. This wrapper supports both types.
 
         Args:
-            layer_id (int): The ID of the FeatureLayer within the FeatureLayerCollection. This is a number that often corresponds to the sequence of FeatureLayers within the collection.
-            container_id (str): The ID of the FeatureLayerCollection that contains the FeatureLayer.
-            gis (GIS): The GIS connection object, generated using the ArcGIS API.
+            layer_id (int): The ID of the Layer or Table within the FeatureLayerCollection. This is a number that often corresponds to the sequence of FeatureLayers within the collection.
+            container_id (str): The ArcGIS Online ID of the FeatureLayerCollection to which the `FLWrapper` instance is based on.
+            gis (GIS): The GIS connection object to the ArcGIS REST API. This determines the context in which data can be retreived from ArcGIS Online.
             how (str, optional): The type of FeatureLayer, either layer or table. Defaults to 'layer'.
         """
 
@@ -255,11 +256,11 @@ class FLWrapper(FLCWrapper):
 
     def spatialize(self, clause=None):
         """Query features from the FeatureLayer. 
-        This will initialize the Spatially Enabled DataFrame (self.sdf) and FeatureSet (self.fs).
-        This function will also extract the Coordinate Reference System (self.crs) and build a GeoDataFrame of the features (self.gdf)
+        This will initialize the Spatially Enabled DataFrame (`FLWrapper.sdf`) and FeatureSet (`FLWrapper.fs`). 
+        This function will also extract the Coordinate Reference System (`FLWrapper.crs`) and build a GeoDataFrame of the features (`FLWrapper.gdf`).
 
         Args:
-            clause (str, optional): SQL clause for filtering features. Defaults to None.
+            clause (str, optional): A SQL clause for filtering features. Defaults to None.
         """
 
         if clause != None:
@@ -279,19 +280,19 @@ class FLWrapper(FLCWrapper):
 
 
     def add_field(self, field_dict:dict):
-        """Add a new field to the FeatureLayer
+        """Add a new field to the FeatureLayer.
 
         Args:
-            field_dict (dict): Dictionary of properties to add to the field.
+            field_dict (dict): A dictionary of properties that define the field in the Service Definition, as outlined in the ArcGIS Online REST API.
         """
         update_dict = {'fields':[field_dict]}
         self.layer.manager.add_to_definition(update_dict)
     
     def delete_field(self, field_name:str):
-        """Delete a field from the FeatureLayer
+        """Delete a field from the FeatureLayer.
 
         Args:
-            field_name (str): Name of the field to delete
+            field_name (str): The name of the field to delete.
         """
         delete_dict = {
             'fields':[{'name':field_name}]
@@ -299,13 +300,14 @@ class FLWrapper(FLCWrapper):
         self.layer.manager.delete_from_definition(delete_dict)
         
     def audit_fields(self, columns):
-        """Compares fields in a delta table and fields in an ArcGIS FeatureLayer.
+        """Compares an inputted list of column names to field names in the FeatureLayer. 
+        This is useful for comparing a DataFrame column names to fields in the Service Definition.
 
         Args:
             columns (list): A list of field names. Could be from a pandas or PySpark DataFrame.
 
         Returns:
-            dict: The key 'Only in FL' contains a list of fields that are only in the FeatureLayer, the key 'Not in FL' contains a list of fields that are only in the Delta table.
+            dict: The key 'Only in FL' contains a list of fields that are only in the FeatureLayer, the key 'Not in FL' contains a list of fields that are only in the inputted list of column names.
         """
         #Get list of fields
         fl_fields = [a['name'] for a in self.layer.properties['fields']]
@@ -316,13 +318,14 @@ class FLWrapper(FLCWrapper):
         return {'Only in FL':delete, 'Not in FL':add}
     
     def audit_schema(self, dtypes):
-        """Compares the service definition field schema to a list of data type tuples, usually from df.dtypes. 
+        """Compares the FeatureLayer's Service Definition field schema to a list of data type tuples, usually sourced from a pandas or PySpark DataFrame using the dtypes method.
+        This function will compare field schemas across the following three categories: name, type, and order.
 
         Args:
-            dtypes (list): A list of tupes, where the first element of the tuple is a field name and the second is the data type.
+            dtypes (list): A list of tuples, where the first element of the tuple is a field name and the second is the data type.
 
         Returns:
-            bool: The function compares schema on the basis of field name, type, and order. If any of these criteria do not match, False is returned. Otherwise True is returned.
+            bool: If the order, types, and names of the `dtypes` parameter all match that of the FeatureLayer, `True` is returned. Otherwise `False` is returned.
         """
         result = None
         #These fields are not included in the comparison
@@ -336,7 +339,7 @@ class FLWrapper(FLCWrapper):
         return result
 
     def update(self, update_dict:dict):
-        """Update the FeatureLayer service definition.
+        """Update the FeatureLayer Service Definition.
 
         Args:
             update_dict (dict): Dictionary of parameters to update in the definition.
@@ -344,12 +347,13 @@ class FLWrapper(FLCWrapper):
         self.layer.manager.update_definition(update_dict)
     
     def upsert(self, fs, id_field, batch_size=0):
-        """Upserts features to a FeatureLayer.
+        """This function will upsert features to the FeatureLayer based on a FeatureSet. 
+        This means new features will be added or existing features will be updated depending on whether or not the feature is already in the FeatureLayer.
 
         Args:
-            fs (FeatureSet): FeatureSet of features to add.
+            fs (FeatureSet): A FeatureSet containing features to add and/or update.
             id_field (str): ID Field for which the Upsert is performed.
-            batch_size (int): For larger datasets, the number of features to upsert per batch. After every batch the system will sleep for one second to avoid a timeout error. If zero the entire dataset will be uploaded in a single batch.
+            batch_size (int): Recommended for larger datasets. The number of features to upsert per batch. After every batch the system will sleep for one second to avoid a timeout error. If zero the entire dataset will be uploaded in a single batch. Defaults to 0.
         """
         #Coerce featureset to pandas dataframe
         df = fs.sdf.set_index(id_field)
