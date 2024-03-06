@@ -54,49 +54,50 @@ class FLCWrapper:
         self.sqlLookup = sqlLookup
 
     def update_container(self):
-        """Used for updating the container FeatureLayerCollection connection when accessing FeatureLayers
+        """Refresh the connection to the FeatureLayerCollection.
         """
         self.container_item = self.gis.content.get(self.container_id)
         self.container=FeatureLayerCollection.fromitem(self.container_item)
 
 
     def get_layer(self, id:int):
-        """Returns FeatureLayer from numeric ID.
+        """Retreive a FeatureLayer from within the FeatureLayerCollection.
 
         Args:
-            id (int): FeatureLayer index within the FeatureLayerCollection.
+            id (int): ID of the FeatureLayer within the FeatureLayerCollection. (i.e 0, 1, 2 etc.)
 
         Returns:
-            FeatureLayer: Referenced FeatureLayer
+            FeatureLayer: The ArcGIS Online reference to the FeatureLayer.
         """
         self.update_container()
         fl = [a for a in self.container.layers if str(a.properties.id) == str(id)][0]
         return fl
     
     def get_table(self, id:int):
-        """Returns Table from numeric ID.
+        """Retreive a Table from within the FeatureLayerCollection.
 
         Args:
-            id (int): Table index within the FeatureLayerCollection.
+            id (int): ID of the Table within the FeatureLayerCollection. (i.e 0, 1, 2 etc.) 
 
         Returns:
-            FeatureLayer: Referenced Table
+            FeatureLayer: The ArcGIS Online reference to the Table.
         """
         self.update_container()
         fl = [a for a in self.container.tables if str(a.properties.id) == str(id)][0]
         return fl
     
     def get_layer_index(self, name:str):
-        """Get the index of a FeatureLayer within a FeatureLayerCollection
+        """Get the index of a FeatureLayer within a FeatureLayerCollection.
 
         Args:
-            name (str): Name of FeatureLayer
+            name (str): The name of FeatureLayer as defined in the Service Definition.
 
         Raises:
             Exception: If no results are found, an exception is raised.
 
         Returns:
-            list or int: If one result is found, an integer of the ID is returned, otherwise a list of IDs that match the name are returned.
+            int: If only one result is found, the numeric ID of the FeatureLayer that matches the `name` argument.
+            list: If multiple results are found, a list of numeric IDs corresponding to all FeatureLayers that match the `name` argument.
         """
         self.update_container()
         #Get list of IDs by name
@@ -112,16 +113,17 @@ class FLCWrapper:
             raise Exception("name does not match any FeatureLayer names in FeatureLayerCollection")
 
     def get_table_index(self, name:str):
-        """Get the index of a Table within a FeatureLayerCollection
+        """Get the index of a Table within a FeatureLayerCollection.
 
         Args:
-            name (str): Name of Table
+            name (str): The name of Table as defined in the Service Definition.
 
         Raises:
             Exception: If no results are found, an exception is raised.
 
         Returns:
-            list or int: If one result is found, an integer of the ID is returned, otherwise a list of IDs that match the name are returned.
+            int: If only one result is found, the numeric ID of the Table that matches the `name` argument.
+            list: If multiple results are found, a list of numeric IDs corresponding to all Tables that match the `name` argument.
         """
         self.update_container()
         #Get list of IDs by name
@@ -138,14 +140,15 @@ class FLCWrapper:
         
 
     def paste(self, schema_id, layer_index):
-        """This function will copy a FeatureLayer definition from a pre-existing ArcGIS FeatureLayer and append it to the FeatureLayerCollection.
+        """This function will copy a Service Definition from a pre-existing ArcGIS Online FeatureLayer and append it to the FeatureLayerCollection as a new FeatureLayer without any Features. 
+        This function will only work for FeatureLayers, Tables are not currently supported.
 
         Args:
-            schema_id (str): ArcGIS Online ID of the FeatureLayerCollection reference you want to copy. The layer_index parameter is used to extract the FeatureLayer of interest.
-            layer_index (int): Numeric index of the FeatureLayer within the FeatureLayerCollection referenced in schema_id.
+            schema_id (str): The ArcGIS Online ID of the FeatureLayerCollection reference that contains the FeatureLayer you want to paste.
+            layer_index (int): The numeric index of the FeatureLayer within the FeatureLayerCollection referenced in `schema_id`. (i.e 0, 1, 2 etc.)
 
         Returns:
-            FeatureLayer: A lookup to the newly created FeatureLayer.
+            FeatureLayer: An ArcGIS Online reference to the newly created FeatureLayer.
         """
 
         schema_fl = self.gis.content.get(schema_id).layers[layer_index]
@@ -164,17 +167,18 @@ class FLCWrapper:
         return self.container.layers[-1]
     
 
-    def add(self, schema:dict, type:str):
-        """Adds a new FeatureLayer or Table to the container.
+    def add(self, schema:dict, type:str="layer"):
+        """Add a new FeatureLayer or Table to the FeatureLayerCollection.
         Args:
-            schema (dict): Dictionary of service definition to add to container.
-            type (str): Either "layer" or "table", depending on what content you are adding.
+            schema (dict): A dictionary of Service Definition properties that define the FeatureLayer or Table.
+            type (str): Either "layer" or "table". This determines the type of the Service Definition. Defaults to "layer".
 
         Raises:
-            Exception: If the type parameter is neither "layer" nor "table"
+            Exception: If the type parameter is neither "layer" nor "table".
 
         Returns:
-            FeatureLayerCollection or Table: Reference to the newly created object in ArcGIS Online.
+            FeatureLayerCollection: An ArcGIS Online reference to the newly created FeatureLayer if `type` is set to "layer".
+            Table: An ArcGIS Online reference to the newly created Table if `type` is set to "table".
         """
         #If the type is table
         if type.lower() == 'table':
@@ -194,17 +198,32 @@ class FLCWrapper:
             raise Exception('You need to identify a `type` of "layer" or "table".')
         
 
-    def delete(self, id:int):
-        """Delete FeatureLayer from FeatureLayerCollection.
+    def delete(self, id:int, type:str="layer"):
+        """Delete a FeatureLayer or Table from the FeatureLayerCollection.
 
         Args:
-            id (int): ID of FeatureLayer to delete.
+            id (int): ID of the FeatureLayer or Table to delete (i.e 0, 1, 2, etc.).
+            type (str): Either "layer" or "table". This determines the type of Service Definition component that is being deleted. Defaults to "layer".
+
+        Raises:
+            Exception: If the type parameter is neither "layer" nor "table".
         """
 
-        #Construct delete dict
-        delete_dict = {"layers":[
-            {"id":id}
-        ]}
+        #Construct delete dict depending on type.
+        if type.lower() == 'layer':
+            delete_dict = {"layers":[
+                {"id":id}
+            ]}
+
+        elif type.lower() == 'table':
+            delete_dict = {"tables":[
+                {"id":id}
+            ]}
+
+        #Otherwise throw an error.
+        else:
+            raise Exception('You need to identify a `type` of "layer" or "table".')
+            
         #Delete the layer from definition
         self.container.manager.delete_from_definition(delete_dict)
         self.update_container()
