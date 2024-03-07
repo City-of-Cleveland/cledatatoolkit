@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 
 def calc_moe(array,how='sum'):
-    """Helper function for generating Margins of Error from a numpy array of MOEs and Estimates. Used for groupby aggregation.
+    """Helper function for developing margins of error (MOEs) for aggregations of sample estimates. 
+    This is recommended for when you are summing, or taking the proportion of multiple ACS estimates. 
+    This function implements the American Community Survey's documented methodology for calculating Margins of Error.
 
     Args:
         array (list-like): A list of margins of error to propogate over. If how = proportion, the arrays must be inputted in the following order:
@@ -11,16 +13,18 @@ def calc_moe(array,how='sum'):
                3. The margins of error of the numerator.
                4. The margins of error of the denominator.
 
-        how (str, optional): Either sum or mean, the methodology used for calculating the MOE. Defaults to 'sum'.
+        how (str, optional): Either 'sum' or 'proportion'. The aggregation methodology used for calculating the MOE. Defaults to 'sum'.
 
     Returns:
-        float: The propogated margion of error.
+        float: The aggregated margin of error for the inputted array if `how`='sum'.
+        numpy.array: The aggregated margins of error for the inputted array(s) if `how`='proportion'.
     """
+    #Convert to numpy array
+    array = np.array(array)
 
     if how=='sum':
          result = np.round(np.sqrt(np.sum(np.power(array,2))),0)
-    elif how == 'mean':
-         result = np.round(np.sqrt(np.sum(np.power([0.5*a for a in array],2))),0)
+
     elif how == 'proportion':
           y_reciprocal = np.divide(1,array[0])
           prop = array[1]
