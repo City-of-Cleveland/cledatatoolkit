@@ -60,7 +60,7 @@ This package contains several modules that perform a variety of functions includ
     * [`upsert()`](#cledatatoolkitago_helpersflwrapperupsertfs-id_field-batch_size0)
 
 [`cledatatoolkit.census`](#cledatatoolkitcensus-module) module  
-* ['calc_moe()'](#cledatatoolkitcensuscalc_moearray-howsum)
+* [`calc_moe()`](#cledatatoolkitcensuscalc_moearray-howsum)
 
 `cledatatoolkit.property` module  
 `cledatatoolkit.spatial` module
