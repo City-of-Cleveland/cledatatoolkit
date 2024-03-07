@@ -13,7 +13,7 @@ This package is divided into a series of modules. These modules can be used to p
 
 ## Installation
 You can use `pip` in your terminal to install the package.
-
+If you have difficulty installing on Linux (primarily Ubuntu) or macOS due to issues with the `arcgis` package (a dependency of this toolkit), you will likely need to install extra dependencies. For those operating systems, try first installing the Kerberos library via `sudo apt install libkrb5-dev` before using `pip` to install this package.
 ```
 pip install cle-data-toolkit
 ```
