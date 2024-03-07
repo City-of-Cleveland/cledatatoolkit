@@ -17,7 +17,11 @@ If you have difficulty installing on Linux (primarily Ubuntu) or macOS due to is
 ```
 pip install cle-data-toolkit
 ```
-This will also install dependencies such as geopandas, pandas, and Jupyter-notebook support.
+This will also install the following dependencies:
+* `geopandas`
+* `pandas`
+* `arcgis`
+* `numpy`
 
 We recommending installing into a [virtual environment](https://docs.python.org/3/library/venv.html) to not modify your base version of Python.
 
@@ -55,7 +59,9 @@ This package contains several modules that perform a variety of functions includ
     * [`update()`](#cledatatoolkitago_helpersflwrapperupdateupdate_dict)
     * [`upsert()`](#cledatatoolkitago_helpersflwrapperupsertfs-id_field-batch_size0)
 
-`cledatatoolkit.census` module  
+[`cledatatoolkit.census`](#cledatatoolkitcensus-module) module  
+* [`calc_moe()`](#cledatatoolkitcensuscalc_moearray-howsum)
+
 `cledatatoolkit.property` module  
 `cledatatoolkit.spatial` module
 
@@ -249,6 +255,25 @@ This package contains several modules that perform a variety of functions includ
 * `None`
 
 ### `cledatatoolkit.census` module
+
+#### `cledatatoolkit.census.calc_moe(array, how='sum')`
+>Helper function for developing margins of error (MOEs) for aggregations of sample estimates. This is recommended for when you are summing, or taking the proportion of multiple ACS estimates. This function implements the American Community Survey's documented methodology for calculating Margins of Error. To better understand how this process works, click [here](https://www.census.gov/content/dam/Census/library/publications/2018/acs/acs_general_handbook_2018_ch08.pdf).
+
+***Parameters:***
+* `array` (*list-like*): A list of margins of error to propogate over. If `how` = 'proportion', the arrays must be inputted as a 2-D array containing lists in the following order:
+    1. The denominators of the proportion.
+    2. The proportions themselves.
+    3. The margins of error of the numerator.
+    4. The margins of error of the denominator.
+* `how` (*string*): Either 'sum' or 'proportion'. The aggregation methodology used for calculating the MOE. Defaults to 'sum'.
+
+***Raises:***  
+* `Exception`: If the `how` argument is not either 'sum' nor 'proportion', an exception is raised.
+
+***Returns:***  
+* `float`: The aggregated margin of error for the inputted array if `how`='sum'.
+* `numpy.array`: The aggregated margins of error for the inputted array(s) if `how`='proportion'.
+
 ### `cledatatoolkit.property` module
 ### `cledatatoolkit.spatial` module
 ## Additional Resources
