@@ -1,0 +1,28 @@
+# This workflow will build the project and run any tests that exist. It must succeed for PRs to be merged.
+
+name: Build Test
+
+on:
+   pull_request:
+
+jobs: 
+   build:
+     runs-on: ubuntu-latest
+     strategy: 
+        fail-fast: false
+        matrix:
+          python-version: ["3.11"]
+
+     steps:
+     - uses: actions/checkout@v3
+     - name: Set up Python
+       uses: actions/setup-python@v3
+       with:
+           python-version: ${{ matrix.python-version }}
+
+     - name: build
+       run: |
+         # stop the build if there are Python syntax errors or undefined names
+         python3 -m pip install --upgrade pip
+         python3 -m pip install --upgrade build
+         python3 -m build
