@@ -62,8 +62,15 @@ This package contains several modules that perform a variety of functions includ
 [`cledatatoolkit.census`](#cledatatoolkitcensus-module) module  
 * [`calc_moe()`](#cledatatoolkitcensuscalc_moearray-howsum)
 
-`cledatatoolkit.property` module  
-`cledatatoolkit.spatial` module
+[`cledatatoolkit.property`](#cledatatoolkitproperty-module) module  
+* [`identify_corp_owner()`](#cledatatoolkitpropertyidentify_corp_ownercolumn-pdseries)
+* [`Regular Expression Library`](#cledatatoolkitproperty-regular-expression-library)
+
+[`cledatatoolkit.spatial`](#cledatatoolkitspatial-module) module
+* [`largest_overlap()`](#cledatatoolkitspatiallargest_overlap)
+* [`fix_missing_sjoins()`](#cledatatoolkitspatialfix_missing_sjoins)
+* [`build_aggregator()`](#cledatatoolkitspatialbuild_aggregator)
+* [`apportion()`](#cledatatoolkitspatialapportion)
 
 ### `cledatatoolkit.ago_helpers` module
 
@@ -275,7 +282,77 @@ This package contains several modules that perform a variety of functions includ
 * `numpy.array`: The aggregated margins of error for the inputted array(s) if `how`='proportion'.
 
 ### `cledatatoolkit.property` module
+
+#### `cledatatoolkit.property.identify_corp_owner(column: pd.Series)`
+>This function evalutes a pandas Series of strings of property owners, specifically values from Cuyahoga Auditor and Cuyahoga GIS property records. It uses a set of regular expressions to determine whether the owner value is a corporate entity, i.e. not owned by individuals. It does this by looking for patterns that suggest it is a business or organization, such as LLC, L.P, and applying exclusions and special cases.
+
+***Parameters:***
+* `column` (*pandas Series*): A Pandas series for 
+
+***Returns:***
+* `pandas Series`: A Series of boolean values True (identified as corporate) or False with same length as input.
+
+#### `cledatatoolkit.property Regular Expression Library`
+> These are various regex patterns used in this module to recognize patterns in property data
+##### biz_flag_re - `str`: Primary regex for identifying all corporate-type owners that can be found in deeded_owner field. Note this pattern is designed for Cuyahoga County's dataset and is not tested for other string matching universally with owner values.
+##### major_names_re - `str`: Captures other special corp names that do not have any outward signs of being a company. This is additive to the main biz_flag_re, and is planned to grow over time.
+##### exclude_re - `str` Excludes special corp names that are being captured from prior steps, but have special conditions that make them not match our definition of corporate-type owners.
+
+
 ### `cledatatoolkit.spatial` module
+
+#### `cledatatoolkit.spatial.largest_overlap()`
+>This function performs a spatial join between two polygon GeoDataFrames using a largest overlap spatial relationship. This means that if an area overlaps multiple areas in another set of polygons, that area will inherit the attributes of the larger overlap. This is useful for situations where administrative boundaries don't line up neatly with other boundaries, and you need a 1:1 relationship. For example, we use it for identifying what ward or neighborhood a property should be in.
+
+***Parameters:***  
+* `target_gdf` (*GeoDataFrame*): GeoDataFrame on left  
+* `target_key` (*str*): Unique identifier field for left dataframe
+* `join_gdf` (*GeoDataFrame*): GeoDataFrame on right  
+* `transfer_field` (*str*): The column you are interested in adding from right to left
+* `new_name` (*str*): Renaming that transfer field  
+* `data_type` (*str*, optional): What to cast the value as. Defaults to "string".
+'string' for text
+'float64' for float
+'int64' for integer
+
+***Returns:***  
+GeoPandas GeoDataFrame: This will look like your left dataframe with additional column from your join_gdf
+
+#### `cledatatoolkit.spatial.fix_missing_sjoins()`
+>Fix spatial joins that should not be null by running sjoin_nearest on records that should logically not be empty. Typical use case is making sure all shapes within Cleveland are successfully joining to geographies that are required for Cleveland property, like ward or neighborhood. This is a lower-level function not intended for general use.
+
+***Parameters:***  
+* `gdf` (*GeoDataFrame*) = Left geodataframe (usually parcels)
+* `join_gdf` (*GeoDataFrame*) = Right geodataframe (usually reference geography)
+* `reference_field` (*str*) =  Defaults to "par_city" assuming parcels dataset
+* `reference_value` (*str*) = "CLEVELAND", # Format to match value if attributed to Cleveland
+* `test_join_field` (*str*) = "Neighborhood", Field we are validating
+* `real_join_field` (*str*)="SPANM"# The sourcefield name to grab.
+
+***Returns:***  
+GeoPandas GeoDataFrame
+
+#### `cledatatoolkit.spatial.build_aggregator()`
+> This function prepares a dictionary that defines a aggregation strategy for every column of a dataframe. Such that when groupby() is applied, the dataframe columns are aggregated in accordance to this aggregator dictionary. The function automatically searches for numeric columns, and ignores non-numeric columns. This function also searches for columns that may be Margins of Error, and applies an appropriate error propogation function to those columns.
+***Parameters:***  
+* `df` (*DataFrame*): A pandas DataFrame containing the columns to be aggregated.
+* `exclude` (*list* or *str*, optional): A list of columns that will not be aggregated. Defaults to None.
+* `default` (*str*, optional): The default aggregation strategy. Defaults to 'sum'.
+
+***Returns:***  
+Dict: Python dictionary of dataframe columns to the aggregation function used in a 'groupby'.
+
+#### `cledatatoolkit.spatial.apportion()`
+***Parameters:***  
+* `left` (*GeoDataFrame*): The data to be apportioned.
+* `right` (*GeoDataFrame*): The geometry to which the data from `left` will be apportioned to.
+* `group_key` (*str*): The ID field of the `right` dataframe.
+* `target_key` (*str*): The ID field of the `left` dataframe.
+* `aggregator` (*str*): A dictionary of aggregation rules for each column in the `left` dataframe. This can be built with `build_aggregator`
+
+***Returns:***  
+GeoDataFrame: An apportioned GeoDataFrame, containing all fields from `right`, and aggregated fields from `left`.
+
 ## Additional Resources
 ### Guide
 See our tutorial notebook repo, [**open-data-examples**](https://github.com/City-of-Cleveland/open-data-examples), for curated tutorials of how you might use this package with Cleveland civic data sources!
