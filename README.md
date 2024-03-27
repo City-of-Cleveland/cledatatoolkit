@@ -293,10 +293,11 @@ This package contains several modules that perform a variety of functions includ
 * `pandas Series`: A Series of boolean values True (identified as corporate) or False with same length as input.
 
 #### `cledatatoolkit.property Regular Expression Library`
-> These are various regex patterns used in this module to recognize patterns in property data
-##### biz_flag_re - `str`: Primary regex for identifying all corporate-type owners that can be found in deeded_owner field. Note this pattern is designed for Cuyahoga County's dataset and is not tested for other string matching universally with owner values.
-##### major_names_re - `str`: Captures other special corp names that do not have any outward signs of being a company. This is additive to the main biz_flag_re, and is planned to grow over time.
-##### exclude_re - `str` Excludes special corp names that are being captured from prior steps, but have special conditions that make them not match our definition of corporate-type owners.
+> These are various regex patterns used in this module to recognize patterns in property data. These are not meant to be used outside of functions.
+
+`biz_flag_re` - *str*: Primary regex for identifying all corporate-type owners that can be found in deeded_owner field. Note this pattern is designed for Cuyahoga County's dataset and is not tested for other string matching universally with owner values.  
+`major_names_re` - *str* : Captures special corp names that do not have logical patterns in owner values that can be identified, but still need to be flagged manually. This is additive to the main biz_flag_re.
+`exclude_re` - *str*: Excludes special corp names that are being captured from prior steps, but have special context.
 
 
 ### `cledatatoolkit.spatial` module
