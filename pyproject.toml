@@ -19,7 +19,7 @@ dependencies = [
   "requests",
   "ipykernel",
   "arcgis ~= 2.2",
-  "pysal"
+  "libpysal"
 ]
 
 [project.urls]
