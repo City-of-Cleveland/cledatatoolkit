@@ -2,6 +2,7 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 import libpysal
+import shapely
 
 from .census import calc_moe
 
@@ -201,7 +202,7 @@ def optimal_single_location(poi_gdf: gpd.GeoDataFrame,
     # Identify 
     candidate_areas = reference_gdf[reference_gdf["access_flag"] == False].copy()
 
-    if method == "clustering":
+    if method == "cluster":
         spatial_weights = libpysal.weights.Rook.from_dataframe(candidate_areas, use_index=True)
 
             # This code collects the sum of every grouping identified before. It iterates through the list of index values, subsets the dataframe, and sums the < 18 population field for that subset.
@@ -226,3 +227,30 @@ def optimal_single_location(poi_gdf: gpd.GeoDataFrame,
             totals_dict[id] = cluster_pop
         max_idx = max(totals_dict, key=totals_dict.get)
         return {"optimal_idx": [max_idx], "added": neighbors[max_idx]+[max_idx], "total_gain": totals_dict[max_idx]}
+    
+
+def arcgisquery_to_geodataframe(query_result, crs=None):
+    """Converts a FeatureSet object from a query in `arcgis` to a geodataframe.
+    This method validates the shapes one by one and could be intensive. It
+    does this because it isn't guaranteed arcgis package will convert properly.
+
+    Args:
+        query_result (arcgis.features.FeatureSet): FeatureSet from a .query() call
+
+    Returns:
+        gpd.GeoDataFrame: GeoDataFrame of the query
+    """
+    fs_epsg = query_result.spatial_reference.get('latestWkid')
+    if not fs_epsg:
+        epsg = crs
+    if not fs_epsg and not crs:
+        raise ValueError("Both query result and the crs parameter are empty. Cannot convert with spatial reference.")
+    else:
+        epsg = fs_epsg
+    epsg_str = f"EPSG:{epsg}"
+    gdf = gpd.read_file(query_result.to_geojson, driver="GeoJSON", crs=epsg_str)
+    shapes = list(map(lambda geom: geom.WKT if geom else None, query_result.df['SHAPE']))
+    new_shapes = [shapely.validation.make_valid(shapely.from_wkt(shape)) for shape in shapes]
+    new_geoseries = gpd.GeoSeries(new_shapes, crs=epsg_str)
+    gdf = gdf.set_geometry(new_geoseries)
+    return gdf
