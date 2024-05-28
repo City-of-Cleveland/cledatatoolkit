@@ -71,6 +71,8 @@ This package contains several modules that perform a variety of functions includ
 * [`fix_missing_sjoins()`](#cledatatoolkitspatialfix_missing_sjoins)
 * [`build_aggregator()`](#cledatatoolkitspatialbuild_aggregator)
 * [`apportion()`](#cledatatoolkitspatialapportion)
+* [`optimal_single_location()`](#cledatatoolkitspatialoptimal_single_location)
+* [`apportion()`](#cledatatoolkitspatialarcgis_query_to_geodataframe)
 
 ### `cledatatoolkit.ago_helpers` module
 
