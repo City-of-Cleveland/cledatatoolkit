@@ -189,9 +189,9 @@ def optimal_single_location(poi_gdf: gpd.GeoDataFrame,
                 guarantees that all target areas that gain access are contiguous.
 
     Returns:
-        dict: Returns three key dictionary with the
+        dict: Returns three key dictionary with the following keys.
             optimal_idx: list, single index value from targeted_areas that is the optimal location for maximum gain
-            added: list, all index values added, optimal + it's neighbors according to the method
+            added: list, all index values added, optimal + its neighbors according to the method
             total_gain: int, the total sum of your 
     """
     
@@ -236,6 +236,7 @@ def arcgisquery_to_geodataframe(query_result, crs=None):
 
     Args:
         query_result (arcgis.features.FeatureSet): FeatureSet from a .query() call
+        crs (str): Optional, EPSG id for the coordinate system of the data source. Needed only if the service isn't noting in query result.
 
     Returns:
         gpd.GeoDataFrame: GeoDataFrame of the query
