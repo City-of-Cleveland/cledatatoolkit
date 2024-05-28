@@ -71,6 +71,8 @@ This package contains several modules that perform a variety of functions includ
 * [`fix_missing_sjoins()`](#cledatatoolkitspatialfix_missing_sjoins)
 * [`build_aggregator()`](#cledatatoolkitspatialbuild_aggregator)
 * [`apportion()`](#cledatatoolkitspatialapportion)
+* [`optimal_single_location()`](#cledatatoolkitspatialoptimal_single_location)
+* [`apportion()`](#cledatatoolkitspatialarcgis_query_to_geodataframe)
 
 ### `cledatatoolkit.ago_helpers` module
 
@@ -353,6 +355,39 @@ Dict: Python dictionary of dataframe columns to the aggregation function used in
 
 ***Returns:***  
 GeoDataFrame: An apportioned GeoDataFrame, containing all fields from `right`, and aggregated fields from `left`.
+
+#### `cledatatoolkit.spatial.optimal_single_location()`
+
+Given a point GeoDataFrame that represents a limited resource of interest, and a polygon GeoDataFrame of target areas with numeric attributes (like by population), this function returns the one target area that will increase access to that POI the most if you added a POI there.
+
+It does this based on spatial proximity you provide in `search_distance` the and weight column (summed).
+
+For example, if you wanted to know which single location in the City would most increase the number of people within 1/2 a mile to ice cream shops, you would pass ice cream point locations to `poi_gdf`,  population data (Census areas) as `targeted_areas`, pass total population column to `weight_col`, and enter search distance (assuming feet, 2640). See below for description of results.
+
+***Parameters:***  
+* `poi_gdf` (*gpd.GeoDataFrame*): The points of interest that you're seeking to maximize access to
+* `targeted_areas` (*gpd.GeoDataFrame*): The reference geographies, ideally census blocks, block groups, or points
+* `targeted_col` (*str*): The column of interest, typically number of people or things you seek to maximize
+* `search_distance` (*int*): Threshold for measuring "access" in feet as the crow flies to center of the area
+* `method`: (*str*):
+    * "brute" will check every candidate area by generating a buffer from its center, checking for overlap, and summing targeted metric column
+    * "clustered" will use libpysal to generate a list of edge neighbors, and sum total impact based on those neighboring clusters. This method guarantees that all target areas that gain access are contiguous.
+
+***Returns:***  
+*dict*: Returns three key dictionary with the following keys.
+* "optimal_idx": *list*, single index value from targeted_areas that is the optimal location for maximum gain
+* "added": *list*, all index values added, optimal + its neighbors according to the method
+* "total_gain": *int*, the total sum of your
+
+You can pass the lists to `.loc()` method of the original dataframe as needed. Use "optimal_idx" index values to map the specific optimum location. Use "added" indexes to show all newly served tracts, including the optimum.
+
+#### `cledatatoolkit.spatial.arcgisquery_to_geodataframe()`
+***Parameters:***  
+* `query_result` (*arcgis.features.FeatureSet*): FeatureSet from a .query() call. Typically the all the data froma service.
+* `crs` (*str*): Optional, EPSG id for the coordinate system of the data source. Needed only if the service isn't noting in query result.
+
+***Returns:***  
+geopandas.GeoDataFrame: GeoDataFrame of the query with validated geometries, ready to use.
 
 ## Additional Resources
 ### Guide

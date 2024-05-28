@@ -12,13 +12,15 @@ authors = [
 ]
 description="A project developed by the City of Cleveland Office of Urban Analytics and Innovation, built to simplify civic data processing for the public."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 dependencies = [
   "geopandas",
   "pandas",
-  "requests",
+  "requests==2.31.0",
   "ipykernel",
-  "arcgis"
+  "arcgis==2.2.0",
+  "libpysal",
+  "dask[dataframe]"
 ]
 
 [project.urls]

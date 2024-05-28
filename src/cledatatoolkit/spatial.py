@@ -1,6 +1,8 @@
 import geopandas as gpd
 import pandas as pd
 import numpy as np
+import libpysal
+import shapely
 
 from .census import calc_moe
 
@@ -161,3 +163,95 @@ def apportion(left,right,group_key,target_key,aggregator):
     grouped = join.groupby(group_key).agg(aggregator).round(2)
     final = gpd.GeoDataFrame(grouped.merge(right,how='left',left_index=True, right_on=group_key),geometry='geometry',crs=right.crs)
     return final
+
+
+def optimal_single_location(poi_gdf: gpd.GeoDataFrame,
+                     targeted_areas: gpd.GeoDataFrame,
+                     weight_col: str,
+                     search_distance: int,
+                     method="brute"):
+    """Given a point GeoDataFrame that represents a limited resource of interest, and a polygon GeoDataFrame of target areas with numeric attributes (like by population),
+    this function returns the one target area that will increase access to that POI the most if you added a POI there.
+    It does this based on spatial proximity you provide in `search_distance` the and weight column (summed).
+
+    For example, if you wanted to know which single location in the City would most increase the number of people within 1/2 a mile to ice cream shops,
+    you would pass ice cream point locations to `poi_gdf`,  population data (Census areas) as `targeted_areas`, pass total population column to `weight_col`,
+    and enter search distance (assuming feet, 2640). See below for description of results.
+    
+
+    Args:
+        poi_gdf (gpd.GeoDataFrame): The points of interest that you're seeking to maximize access to
+        targeted_areas (gpd.GeoDataFrame): The reference geographies, ideally census blocks, block groups, or points
+        targeted_col (str): The column of interest, typically number of people or things you seek to maximize
+        search_distance (int): Threshold for measuring "access" in feet as the crow flies to center of the area
+        method: "brute" will check every candidate area by generating a buffer from its center, checking for overlap, and summing targeted metric colun
+                "clustered" will use libpysal to generate list of edge neighbors, and sum total impact based on those neighbors. This method
+                guarantees that all target areas that gain access are contiguous.
+
+    Returns:
+        dict: Returns three key dictionary with the following keys.
+            optimal_idx: list, single index value from targeted_areas that is the optimal location for maximum gain
+            added: list, all index values added, optimal + its neighbors according to the method
+            total_gain: int, the total sum of your 
+    """
+    
+    reference_gdf = targeted_areas.copy()
+
+    buffer_amenity = poi_gdf.buffer(search_distance).unary_union
+    reference_gdf["access_flag"] = buffer_amenity.intersects(reference_gdf.geometry.representative_point())
+    # Identify 
+    candidate_areas = reference_gdf[reference_gdf["access_flag"] == False].copy()
+
+    if method == "cluster":
+        spatial_weights = libpysal.weights.Rook.from_dataframe(candidate_areas, use_index=True)
+
+            # This code collects the sum of every grouping identified before. It iterates through the list of index values, subsets the dataframe, and sums the < 18 population field for that subset.
+        totals_dict = {}
+        for reference_area in spatial_weights.neighbors.items():
+            reference_idx =reference_area[0]
+            neighboring_ids = reference_area[1]
+            cluster_pop = candidate_areas.loc[[reference_idx]+neighboring_ids][weight_col].sum()
+            # Create new key-value storing that block groups sum
+            totals_dict[reference_idx] = cluster_pop
+        max_idx = max(totals_dict, key=totals_dict.get)
+        return {"optimal_idx": [max_idx], "added": [max_idx]+spatial_weights.neighbors[max_idx], "total_gain": totals_dict[max_idx]}
+    elif method == "brute":
+        totals_dict = {}
+        neighbors = {}
+        for id in candidate_areas.index.to_list():
+            candidate_center = candidate_areas.loc[id].geometry.representative_point()
+            expansion_zone = candidate_center.buffer(search_distance)
+            added_idxs = candidate_areas[candidate_areas.intersects(expansion_zone)].index.to_list()
+            neighbors[id] = added_idxs
+            cluster_pop = candidate_areas.loc[[id]+added_idxs][weight_col].sum()
+            totals_dict[id] = cluster_pop
+        max_idx = max(totals_dict, key=totals_dict.get)
+        return {"optimal_idx": [max_idx], "added": neighbors[max_idx]+[max_idx], "total_gain": totals_dict[max_idx]}
+    
+
+def arcgisquery_to_geodataframe(query_result, crs=None):
+    """Converts a FeatureSet object from a query in `arcgis` to a geodataframe.
+    This method validates the shapes one by one and could be intensive. It
+    does this because it isn't guaranteed arcgis package will convert properly.
+
+    Args:
+        query_result (arcgis.features.FeatureSet): FeatureSet from a .query() call
+        crs (str): Optional, EPSG id for the coordinate system of the data source. Needed only if the service isn't noting in query result.
+
+    Returns:
+        gpd.GeoDataFrame: GeoDataFrame of the query
+    """
+    fs_epsg = query_result.spatial_reference.get('latestWkid')
+    if not fs_epsg:
+        epsg = crs
+    if not fs_epsg and not crs:
+        raise ValueError("Both query result and the crs parameter are empty. Cannot convert with spatial reference.")
+    else:
+        epsg = fs_epsg
+    epsg_str = f"EPSG:{epsg}"
+    gdf = gpd.read_file(query_result.to_geojson, driver="GeoJSON", crs=epsg_str)
+    shapes = list(map(lambda geom: geom.WKT if geom else None, query_result.df['SHAPE']))
+    new_shapes = [shapely.validation.make_valid(shapely.from_wkt(shape)) for shape in shapes]
+    new_geoseries = gpd.GeoSeries(new_shapes, crs=epsg_str)
+    gdf = gdf.set_geometry(new_geoseries)
+    return gdf
