@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cle-data-toolkit"
-version = "1.0.1"
+version = "1.0.2"
 authors = [
   { name="Shelley Murphy", email="smurphy3@clevelandohio.gov"},
   { name="Sam Martinez", email="smartinez2@clevelandohio.gov"},
