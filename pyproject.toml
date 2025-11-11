@@ -16,7 +16,7 @@ requires-python = ">=3.9"
 dependencies = [
   "geopandas",
   "pandas",
-  "requests==2.31.0",
+  "requests==2.32.4",
   "ipykernel",
   "arcgis==2.2.0",
   "libpysal",
